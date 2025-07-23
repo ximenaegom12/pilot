@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>I LOVE YOU ✈️</title>
+
+  <style>
+
+    html, body {
+
+      margin: 0;
+
+      padding: 0;
+
+      overflow: hidden;
+
+      background: black;
+
+    }
+
+    canvas {
+
+      display: block;
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+
+
+
+<audio autoplay loop>
+
+  <source src="cancion.mp3" type="audio/mpeg" />
+
+  Tu navegador no soporta audio HTML5.
+
+</audio>
+
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+
+canvas.height = window.innerHeight;
+
+
+
+// Cargar imágenes
+
+const fondo = new Image();
+
+fondo.src = "fondo.jpg";
+
+
+
+const avionImg = new Image();
+
+avionImg.src = "avion.png";
+
+
+
+let pathPoints = [];
+
+let currentPoint = 0;
+
+const smokeParticles = [];
+
+
+
+const message = "I LOVE YOU";
+
+const fontSize = 120;
+
+
+
+// Crear un canvas invisible para trazar la fuente y obtener puntos
+
+function generatePath() {
+
+  const offCanvas = document.createElement("canvas");
+
+  const offCtx = offCanvas.getContext("2d");
+
+  offCanvas.width = canvas.width;
+
+  offCanvas.height = canvas.height;
+
+
+
+  offCtx.font = `bold ${fontSize}px Segoe Script, cursive`;
+
+  offCtx.fillStyle = "white";
+
+  offCtx.textAlign = "center";
+
+  offCtx.textBaseline = "middle";
+
+  offCtx.fillText(message, canvas.width / 2, canvas.height / 2);
+
+
+
+  const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+
+  const step = 4;
+
+
+
+  for (let y = 0; y < offCanvas.height; y += step) {
+
+    for (let x = 0; x < offCanvas.width; x += step) {
+
+      const index = (y * offCanvas.width + x) * 4;
+
+      const alpha = imageData.data[index + 3];
+
+      if (alpha > 128 && Math.random() < 0.15) {
+
+        pathPoints.push({ x, y });
+
+      }
+
+    }
+
+  }
+
+
+
+  // Ordenar los puntos por X para un recorrido más fluido
+
+  pathPoints.sort((a, b) => a.x - b.x);
+
+}
+
+
+
+function drawSmoke() {
+
+  for (let i = smokeParticles.length - 1; i >= 0; i--) {
+
+    const p = smokeParticles[i];
+
+    ctx.beginPath();
+
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+
+    ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+
+    ctx.fill();
+
+    p.radius += 0.1;
+
+    p.alpha -= 0.003;
+
+    if (p.alpha <= 0) {
+
+      smokeParticles.splice(i, 1);
+
+    }
+
+  }
+
+}
+
+
+
+function draw() {
+
+  ctx.drawImage(fondo, 0, 0, canvas.width, canvas.height);
+
+
+
+  drawSmoke();
+
+
+
+  if (currentPoint < pathPoints.length) {
+
+    const pos = pathPoints[currentPoint];
+
+    const next = pathPoints[Math.min(currentPoint + 1, pathPoints.length - 1)];
+
+    const angle = Math.atan2(next.y - pos.y, next.x - pos.x);
+
+
+
+    // Agregar humo en cada paso
+
+    smokeParticles.push({
+
+      x: pos.x,
+
+      y: pos.y,
+
+      radius: 2 + Math.random() * 1.5,
+
+      alpha: 0.8 + Math.random() * 0.2,
+
+    });
+
+
+
+    // Dibujar el avión
+
+    ctx.save();
+
+    ctx.translate(pos.x, pos.y);
+
+    ctx.rotate(angle);
+
+    ctx.drawImage(avionImg, -20, -15, 40, 30);
+
+    ctx.restore();
+
+
+
+    currentPoint++;
+
+  } else {
+
+    // Avión se detiene, pero el humo sigue visible
+
+    ctx.font = "bold 32px 'Segoe Script'";
+
+    ctx.fillStyle = "white";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText("my handsome pilot ❤️", canvas.width / 2, canvas.height / 2 + 150);
+
+  }
+
+
+
+  requestAnimationFrame(draw);
+
+}
+
+
+
+function start() {
+
+  generatePath();
+
+  draw();
+
+}
+
+
+
+window.onload = () => {
+
+  if (fondo.complete && avionImg.complete) {
+
+    start();
+
+  } else {
+
+    let loaded = 0;
+
+    [fondo, avionImg].forEach((img) => {
+
+      img.onload = () => {
+
+        loaded++;
+
+        if (loaded === 2) start();
+
+      };
+
+    });
+
+  }
+
+};
+
+</script>
+
+</body>
+
+</html>
+
